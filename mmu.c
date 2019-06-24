@@ -1,5 +1,7 @@
 #include "mmu.h"
 
+u8 *mem = _mem;
+
 void w8(u16 a, u8 v) {
   //switch (a) {
   //  case 0x0000 ... 0x1fff: ram[a & 0x7ff] = v; break;

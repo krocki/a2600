@@ -12,8 +12,8 @@ endif
 
 all: a26
 
-a26: 6502/6502.o 6502/6502.h Makefile a26.o
-	${GCC} a26.o 6502/6502.o ${C_FLAGS} ${GL_FLAGS} -o $@
+a26: mmu.o 6502/6502.o 6502/6502.h Makefile a26.o
+	${GCC} mmu.o a26.o 6502/6502.o ${C_FLAGS} ${GL_FLAGS} -o $@
 
 %.o: %.c
 	${GCC} ${C_FLAGS} -c $< -o $@

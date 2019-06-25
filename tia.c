@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "tia.h"
 
 u8 col=0;
@@ -13,6 +14,8 @@ u8 draw;
 #define ROWS 262
 #define IM_W 160
 #define IM_H 192
+
+//u8 tia_regs[0x40];
 
 //u32 pal[2] = {0x0000ff, 0xffffff}; //b/w palette
 u32 pal[] = {
@@ -36,6 +39,12 @@ u32 pal[] = {
 
 u8 pix[IM_W * IM_H * 3];
 
+struct {
+  u8 PF0;
+  u8 PF1;
+  u8 PF2;
+} tia_regs;
+
 void tia_step(u32 ticks) {
 
   for (u32 i=0; i<ticks; i++) {
@@ -54,11 +63,43 @@ void tia_step(u32 ticks) {
       pix[3*(x+y*IM_W)+2] = (color) & 0xff;
     }
 
-    //printf("col %d line %d, x %d y %d\n", col, line, x, y);
-    //printf("h %d v %d o %d vs %d d %d\n", hblank, vblank, overscan, vsync, draw);
+    printf("col %d line %d, x %d y %d\n", col, line, x, y);
+    printf("h %d v %d o %d vs %d d %d\n", hblank, vblank, overscan, vsync, draw);
 
     col++;
     if (col==COLS) { line++; col=0; }
     if (line==ROWS) { line=0; }
   }
 }
+
+u8 tia_r8(u8 a) {
+  u8 v = 0; // = tia_regs[0x30 | (a & 0x0f)];
+  printf("tia reading %0x -> %0x\n", a,v);
+  //return v;
+  return v;
+}
+
+
+void tia_w8(u8 a, u8 v) {
+  switch (a) {
+    case 0x02: printf("wsync\n"); break;
+    case 0x03: printf("rsync\n"); break;
+    case 0x0d: tia_regs.PF0 = v;  break;
+    case 0x0e: tia_regs.PF1 = v;  break;
+    case 0x0f: tia_regs.PF2 = v;  break;
+    case 0x10: printf("RESP0\n"); break;
+    case 0x11: printf("RESP1\n"); break;
+    case 0x12: printf("RESM0\n"); break;
+    case 0x13: printf("RESM1\n"); break;
+    case 0x14: printf("RESBL\n"); break;
+    case 0x2a: printf("HMOVE\n"); break;
+    case 0x2b: printf("HMCLR\n"); break;
+    case 0x2c: printf("CXCLR\n"); break;
+
+    default:
+      //tia_regs[a & 0x3f] = v;
+      printf("tia writing %0x <- %0x\n", a, v);
+      break;
+  }
+}
+

@@ -1,27 +1,34 @@
 #include "mmu.h"
+#include "tia.h"
 
-u8 *mem = _mem;
+u8 *cart = _cart;
+u8 *ram = _ram;
+u8 *riot = _riot;
 
 void w8(u16 a, u8 v) {
-  //switch (a) {
-  //  case 0x0000 ... 0x1fff: ram[a & 0x7ff] = v; break;
-  //  case 0x2000 ... 0x3fff: write_ppu_regs(a & 0x7,v); break;
-  //  case 0x4014: dma_transfer(v); break; // dma
-  //  case 0x4016: break; // joypad strobe
-  //  case 0x6000 ... 0xffff: break;
-  //}
+  a &= 0x1fff; // we only have 13 bits
+  switch (a) {
+    case 0x0000 ... 0x002c: // tia
+      tia_w8(a & 0x3f, v);
+    case 0x0080 ... 0x00ff: // ram
+      ram[a & 0x7f] = v; break;
+    default: break;
+  }
 }
 
 u8 r8(u16 a) {
-  //switch (a) {
-  //  case 0x0000 ... 0x1fff: return ram[a & 0x7ff];
-  //  case 0x2000 ... 0x3fff: return read_ppu_regs(a & 0x7);
-  //  case 0x4014: break; // dma
-  //  case 0x4016: break; // joypad 0
-  //  case 0x4017: break; // joypad 1
-  //  case 0x6000 ... 0x7fff: break;
-  //  case 0x8000 ... 0xffff: return prg[a & 0x3fff];
-  //}
+  a &= 0x1fff; // we only have 13 bits
+  switch (a) {
+    case 0x0000 ... 0x003d: // tia
+      return tia_r8(a & 0x0f);
+    case 0x0080 ... 0x00ff: // ram
+      return ram[a & 0x7f];
+    case 0x0200 ... 0x02ff: // io
+      return riot[a & 0xff];
+    case 0x1000 ... 0x1fff: // cart
+      return cart[a & 0xfff];
+    default: return 0x0;
+  }
 }
 
 u16 r16_ok(u16 a) { return (r8(a) | (r8(a+1) << 8)); }

@@ -9,6 +9,8 @@
 #include "io.h"
 
 extern int lcd_on;
+extern u8 limitspeed;
+extern u8 paused;
 extern u8 *screen;
 u64 cpu_cycles = 0;
 
@@ -22,10 +24,17 @@ void *a26(void *args) {
 
   u32 steps = 1;
 
-  if (args) readfile(args, mem);
+  if (args) readfile(args, cart, CART_SIZE);
   else printf("a26: no rom specified\n");
 
+  u16 rst_ip = r16(0xfffc);
+  printf("rst ip %04x\n", rst_ip);
+
+  reset(rst_ip, 0xff, 0x24);
+
   while (lcd_on) {
+    if (paused) continue;
+    if (limitspeed) usleep(1);
     cpu_step(steps);
     tia_step(steps*3);
     cpu_cycles+=steps;

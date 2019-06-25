@@ -7,6 +7,10 @@
 
 int lcd_on=0;
 u8 flip_y=1;
+u8 buf_w = 1;
+u8 buf_h = 1;
+u8 limitspeed = 0;
+u8 paused = 0;
 u8 *screen;
 
 #include <sys/time.h>
@@ -78,8 +82,12 @@ GLFWwindow* open_window(const char* title, GLFWwindow* share, s32 posX, s32 posY
 
 void key_callback(GLFWwindow* window, s32 key, s32 scancode, s32 action, s32 mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window, GLFW_TRUE);
-    if (action == GLFW_PRESS && key == GLFW_KEY_M) { if (screen == mem) screen = pix; else screen = mem; }
-    if (action == GLFW_PRESS && key == GLFW_KEY_F) { flip_y ^= 1; }
+    if (action == GLFW_PRESS && key == GLFW_KEY_M) { printf("scr <- cart\n"); screen = cart; buf_h = 32; buf_w = 32; }
+    if (action == GLFW_PRESS && key == GLFW_KEY_R) { printf("scr <- ram\n"); screen = ram;  buf_h = 16; buf_w =  8; }
+    if (action == GLFW_PRESS && key == GLFW_KEY_P) { printf("scr <- pix\n"); screen = pix; }
+    if (action == GLFW_PRESS && key == GLFW_KEY_F) { flip_y ^= 1; printf("flip y %d\n", flip_y); }
+    if (action == GLFW_PRESS && key == GLFW_KEY_1) { paused ^= 1; printf("paused %d\n", paused); }
+    if (action == GLFW_PRESS && key == GLFW_KEY_2) { limitspeed ^= 1; printf("limitspeed %d\n", limitspeed); }
 }
 
 void draw_quad()
@@ -95,6 +103,8 @@ void draw_quad()
     glBegin(GL_QUADS);
     float i,j;
     u8 px,py;
+    // rgb screen
+    if (screen == pix)
     for (u8 x=0; x<IM_W; x++) for (u8 y=0; y<IM_H; y++ ) {
          i = x * incr_x; j = y * incr_y; px = x; py = flip_y ? IM_H - y - 1 : y; // FLIP vert
 
@@ -105,6 +115,19 @@ void draw_quad()
 
           glVertex2f(i,      j     );     glVertex2f(i+incr_x, j     );
           glVertex2f(i+incr_x, j+incr_y); glVertex2f(i,      j+incr_y);
+    }
+    // 1 channel, debug mem view
+    if (screen != pix) {
+      incr_x = 1.0f/(float)buf_w; incr_y = 1.0f/(float)buf_h;
+      for (u8 x=0; x<buf_w; x++) for (u8 y=0; y<buf_h; y++ ) {
+         i = x * incr_x; j = y * incr_y; px = x; py = flip_y ? buf_h - y - 1 : y; // FLIP vert
+         glColor4f(screen[(px+py*buf_w)]/255.0f,
+                   screen[(px+py*buf_w)]/255.0f,
+                   screen[(px+py*buf_w)]/255.0f,
+                   255.0f/255.0f);
+         glVertex2f(i,      j     );     glVertex2f(i+incr_x, j     );
+         glVertex2f(i+incr_x, j+incr_y); glVertex2f(i,      j+incr_y);
+      }
     }
     glEnd();
 }

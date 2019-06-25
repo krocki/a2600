@@ -1,5 +1,8 @@
+#include <stdio.h>
+
 #include "mmu.h"
 #include "tia.h"
+#include "pia.h"
 
 u8 *cart = _cart;
 u8 *ram = _ram;
@@ -7,11 +10,17 @@ u8 *riot = _riot;
 
 void w8(u16 a, u8 v) {
   a &= 0x1fff; // we only have 13 bits
+  //printf("w8 %04x %02x\n", a, v);
   switch (a) {
     case 0x0000 ... 0x002c: // tia
       tia_w8(a & 0x3f, v);
+      break;
+    case 0x0200 ... 0x02ff:
+      pia_w8(a & 0xff, v);
+      break;
     case 0x0080 ... 0x00ff: // ram
-      ram[a & 0x7f] = v; break;
+      ram[a & 0x7f] = v;
+      break;
     default: break;
   }
 }
@@ -24,7 +33,7 @@ u8 r8(u16 a) {
     case 0x0080 ... 0x00ff: // ram
       return ram[a & 0x7f];
     case 0x0200 ... 0x02ff: // io
-      return riot[a & 0xff];
+      return pia_r8(a & 0xff);
     case 0x1000 ... 0x1fff: // cart
       return cart[a & 0xfff];
     default: return 0x0;

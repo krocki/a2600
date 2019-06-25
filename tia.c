@@ -12,11 +12,6 @@ u8 draw;
 
 u64 tia_cycles = 0;
 
-#define COLS 228
-#define ROWS 262
-#define IM_W 160
-#define IM_H 192
-
 //u32 pal[2] = {0x0000ff, 0xffffff}; //b/w palette
 u32 pal[] = {
   0x000000, 0x404040, 0x6c6c6c, 0x909090, 0xb0b0b0, 0xc8c8c8, 0xdcdcdc, 0xf4f4f4,
@@ -39,6 +34,11 @@ u32 pal[] = {
 
 u8 pix[IM_W * IM_H * 3];
 tia_regs_t tia_regs;
+
+void tia_reset() {
+  tia_regs.WSYNC = 0xff;
+}
+
 void tia_step(u32 ticks) {
 
   for (u32 i=0; i<ticks; i++) {
@@ -71,10 +71,12 @@ void tia_step(u32 ticks) {
           color=(offset < 20) ? tia_regs.COLUP0 : tia_regs.COLUP1; //return P0 or P1
         } else { color=tia_regs.COLUPF; } // playfield
       }
-      else { color=tia_regs.COLUBK; } // not playfield
+      else {
+        color=tia_regs.COLUBK;
+        } // not playfield
 
       // convert
-      rgb_color=pal[color];
+      rgb_color=pal[color/2];
 #endif
       if (x>=0 && x<IM_W && y>=0 && y<IM_H) {
         pix[3*(x+y*IM_W)+0] = (rgb_color >> 16);
@@ -94,15 +96,9 @@ void tia_step(u32 ticks) {
   tia_cycles++;
 }
 
-u8 tia_r8(u8 a) {
-  u8 v = 0; // = tia_regs[0x30 | (a & 0x0f)];
-  printf("tia reading %0x -> %0x\n", a,v);
-  //return v;
-  return v;
-}
-
-
 void tia_w8(u8 a, u8 v) {
+  //printf("tia writing %0x <- %0x\n", a, v);
+
   switch (a) {
     case 0x00: tia_regs.VSYNC  = v; break;
     case 0x01: tia_regs.VBLANK = v; break;
@@ -116,19 +112,26 @@ void tia_w8(u8 a, u8 v) {
     case 0x0d: tia_regs.PF0 = v;  break;
     case 0x0e: tia_regs.PF1 = v;  break;
     case 0x0f: tia_regs.PF2 = v;  break;
-    case 0x10: printf("RESP0\n"); break;
-    case 0x11: printf("RESP1\n"); break;
-    case 0x12: printf("RESM0\n"); break;
-    case 0x13: printf("RESM1\n"); break;
-    case 0x14: printf("RESBL\n"); break;
-    case 0x2a: printf("HMOVE\n"); break;
-    case 0x2b: printf("HMCLR\n"); break;
-    case 0x2c: printf("CXCLR\n"); break;
+    case 0x10: /*printf("RESP0\n");*/ break;
+    case 0x11: /*printf("RESP1\n");*/ break;
+    case 0x12: /*printf("RESM0\n");*/ break;
+    case 0x13: /*printf("RESM1\n");*/ break;
+    case 0x14: /*printf("RESBL\n");*/ break;
+    case 0x2a: /*printf("HMOVE\n");*/ break;
+    case 0x2b: /*printf("HMCLR\n");*/ break;
+    case 0x2c: /*printf("CXCLR\n");*/ break;
 
     default:
       //tia_regs[a & 0x3f] = v;
-      printf("tia writing %0x <- %0x\n", a, v);
+      //printf("tia writing %0x <- %0x\n", a, v);
       break;
   }
+}
+
+u8 tia_r8(u8 a) {
+  u8 v = 0; // = tia_regs[0x30 | (a & 0x0f)];
+  //printf("tia reading %0x -> %0x\n", a,v);
+  //return v;
+  return v;
 }
 

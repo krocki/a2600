@@ -7,11 +7,13 @@
 extern u32 pal[];
 extern u8 pix[IM_W * IM_H * 3];
 extern void tia_step(u32 ticks);
+extern void tia_reset();
 // read / write
 extern void tia_w8(u8 a, u8 v);
 extern u8 tia_r8(u8 a);
 
 typedef struct {
+
   u8 VSYNC  ;
   u8 VBLANK ;
   u8 WSYNC  ;
@@ -24,6 +26,7 @@ typedef struct {
   u8 PF0;
   u8 PF1;
   u8 PF2;
+
 } tia_regs_t;
 
 extern tia_regs_t tia_regs;

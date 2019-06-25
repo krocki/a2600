@@ -5,6 +5,7 @@
 #include "6502/6502.h"
 #include "a26.h"
 #include "mmu.h"
+#include "pia.h"
 #include "tia.h"
 #include "io.h"
 
@@ -31,6 +32,7 @@ void *a26(void *args) {
   printf("rst ip %04x\n", rst_ip);
 
   reset(rst_ip, 0xff, 0x24);
+  tia_reset();
 
   while (lcd_on) {
     if (paused) continue;
@@ -42,6 +44,7 @@ void *a26(void *args) {
     }
 
     tia_step(steps*3);
+    pia_step(steps);
 
   }
 

@@ -13,7 +13,7 @@ else # Linux or other
   GL_FLAGS=-lglfw -lGL -lpthread
 endif
 
-objs=main.o io.o a26.o lcd.o tia.o mmu.o 6502/6502.o
+objs=main.o io.o a26.o lcd.o pia.o tia.o mmu.o 6502/6502.o
 all: a26
 
 a26: ${objs}

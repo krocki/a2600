@@ -35,9 +35,14 @@ void *a26(void *args) {
   while (lcd_on) {
     if (paused) continue;
     if (limitspeed) usleep(1);
-    cpu_step(steps);
+
+    if (0xff == tia_regs.WSYNC) {
+      cpu_step(steps);
+      cpu_cycles+=steps;
+    }
+
     tia_step(steps*3);
-    cpu_cycles+=steps;
+
   }
 
   printf("a26: terminate, cycles %llu\n", cpu_cycles);

@@ -10,12 +10,12 @@ u8 overscan;
 u8 vsync;
 u8 draw;
 
+u64 tia_cycles = 0;
+
 #define COLS 228
 #define ROWS 262
 #define IM_W 160
 #define IM_H 192
-
-//u8 tia_regs[0x40];
 
 //u32 pal[2] = {0x0000ff, 0xffffff}; //b/w palette
 u32 pal[] = {
@@ -38,13 +38,7 @@ u32 pal[] = {
 };
 
 u8 pix[IM_W * IM_H * 3];
-
-struct {
-  u8 PF0;
-  u8 PF1;
-  u8 PF2;
-} tia_regs;
-
+tia_regs_t tia_regs;
 void tia_step(u32 ticks) {
 
   for (u32 i=0; i<ticks; i++) {
@@ -54,22 +48,50 @@ void tia_step(u32 ticks) {
     s16 x=col-68; s16 y=line-40;
     hblank=y>=0 && y<IM_H && x<0;
     overscan=y>=IM_H;
-    draw=x>=0 && x<IM_W && y>=0 && y<IM_H;
+    draw=col > 67 && line > 39 && col < 232;
+
+    if (tia_regs.VSYNC) { line=0; col=0; tia_regs.VSYNC=0;}
 
     if (draw) {
-      u32 color=pal[rand() % 128];
-      pix[3*(x+y*IM_W)+0] = (color >> 16);
-      pix[3*(x+y*IM_W)+1] = (color >> 8) & 0xff;
-      pix[3*(x+y*IM_W)+2] = (color) & 0xff;
+      u32 rgb_color;
+      u8 color;
+#if TEST_SCREEN
+      rgb_color=pal[rand() % 128];
+#else
+      int offset = x/4;
+      u8 pf = 0;
+      if ((tia_regs.CTRLPF & 0x1) && offset > 19)
+           { offset = 19 - (offset % 20); }
+      else { offset %= 20; }
+      if      (offset < 4 ) { pf = (tia_regs.PF0 >> (offset + 4))  & 0x1; } // read playfield 0
+      else if (offset < 12) { pf = (tia_regs.PF1 >> (11 - offset)) & 0x1; } // read playfield 1
+      else                  { pf = (tia_regs.PF2 >> (offset - 12)) & 0x1; } // read playfield 2
+      if (pf) {
+        if ((tia_regs.CTRLPF & 0x2) == 0x2) {
+          color=(offset < 20) ? tia_regs.COLUP0 : tia_regs.COLUP1; //return P0 or P1
+        } else { color=tia_regs.COLUPF; } // playfield
+      }
+      else { color=tia_regs.COLUBK; } // not playfield
+
+      // convert
+      rgb_color=pal[color];
+#endif
+      if (x>=0 && x<IM_W && y>=0 && y<IM_H) {
+        pix[3*(x+y*IM_W)+0] = (rgb_color >> 16);
+        pix[3*(x+y*IM_W)+1] = (rgb_color >> 8) & 0xff;
+        pix[3*(x+y*IM_W)+2] = (rgb_color) & 0xff;
+      }
     }
 
-    printf("col %d line %d, x %d y %d\n", col, line, x, y);
-    printf("h %d v %d o %d vs %d d %d\n", hblank, vblank, overscan, vsync, draw);
+    //printf("col %d line %d, x %d y %d\n", col, line, x, y);
+    //printf("h %d v %d o %d vs %d d %d\n", hblank, vblank, overscan, vsync, draw);
 
     col++;
-    if (col==COLS) { line++; col=0; }
+    if (col==COLS) { line++; col=0; tia_regs.WSYNC = 0xff; }
     if (line==ROWS) { line=0; }
   }
+
+  tia_cycles++;
 }
 
 u8 tia_r8(u8 a) {
@@ -82,8 +104,15 @@ u8 tia_r8(u8 a) {
 
 void tia_w8(u8 a, u8 v) {
   switch (a) {
-    case 0x02: printf("wsync\n"); break;
-    case 0x03: printf("rsync\n"); break;
+    case 0x00: tia_regs.VSYNC  = v; break;
+    case 0x01: tia_regs.VBLANK = v; break;
+    case 0x02: tia_regs.WSYNC  = v; break;
+    case 0x03: tia_regs.RSYNC  = v; break;
+    case 0x06: tia_regs.COLUP0 = v; break;
+    case 0x07: tia_regs.COLUP1 = v; break;
+    case 0x08: tia_regs.COLUPF = v; break;
+    case 0x09: tia_regs.COLUBK = v; break;
+    case 0x0a: tia_regs.CTRLPF = v; break;
     case 0x0d: tia_regs.PF0 = v;  break;
     case 0x0e: tia_regs.PF1 = v;  break;
     case 0x0f: tia_regs.PF2 = v;  break;

@@ -44,8 +44,8 @@ int init_lcd() {
     double cps = (1e-6 * (cpu_cycles - last_cpu_cycles)) / time_elapsed;
     last_cpu_cycles = cpu_cycles;
     frame_cnt++;
-    sprintf(wtitle, LCD_NAME ": kF %3.1f gC %5.1f, mips %3.1f fps %3.0f",
-            1e-3*frame_cnt, 1e-9*cpu_cycles, cps, fps);
+    sprintf(wtitle, LCD_NAME ": %3.1fk fr, %4.1f Gcycl, %3.1f Gips, %3.1f Mpix, %3.0f FPS",
+            1e-3*frame_cnt, 1e-9*cpu_cycles, 1e-6*tia_cycles, cps, fps);
     glfwSetWindowTitle(window, wtitle);
     glfwMakeContextCurrent(window);
     glClear(GL_COLOR_BUFFER_BIT);
